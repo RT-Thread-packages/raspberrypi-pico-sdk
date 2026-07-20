@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import sys
 
 PREFIX = 'arm-none-eabi-'
 EXEC_PATH = ''
@@ -8,15 +9,21 @@ if os.getenv('RTT_EXEC_PATH'):
     EXEC_PATH = os.getenv('RTT_EXEC_PATH')
 
 env = Environment(
+tools = ['gcc', 'g++', 'gas', 'gnulink', 'ar'],
 CC = PREFIX + 'gcc',
-AS = PREFIX + 'gcc',
+AS = PREFIX + 'gcc', ASFLAGS = Split('''
+-mcpu=cortex-m0plus
+-mthumb
+'''),
+ASCOM = '$AS $ASFLAGS $CPPFLAGS $_CPPDEFFLAGS $_CPPINCFLAGS -c -o $TARGET $SOURCES',
 AR = PREFIX + 'ar', ARFLAGS = '-rc',
 CXX = PREFIX + 'g++',
 LINK = PREFIX + 'gcc',
-TARGET_EXT = 'elf',
+PROGSUFFIX = '.elf',
 SIZE = PREFIX + 'size',
 OBJDUMP = PREFIX + 'objdump',
 OBJCPY = PREFIX + 'objcopy',
+PYTHON = sys.executable,
 CCFLAGS=Split('''
 -mcpu=cortex-m0plus
 -mthumb
@@ -35,7 +42,8 @@ LINKFLAGS=Split('''
 -DNDEBUG
 --specs=nosys.specs 
 -nostartfiles
--Tsrc/rp2_common/boot_stage2/boot_stage2.ld
+-T
+src/rp2_common/boot_stage2/boot_stage2.ld
 '''),
 CPPDEFINES = Split('''
 PICO_BOARD=\"pico\"
@@ -59,7 +67,7 @@ env.PrependENVPath('PATH', EXEC_PATH)
 env.Command(
     ['src/common/pico_base/include/pico/config_autogen.h','src/common/pico_base/include/pico/version.h'],
     '',
-    'python3 tools/generate_headers.py'
+    '"$PYTHON" tools/generate_headers.py'
 )
 
 env.Program(
@@ -76,5 +84,5 @@ env.Command(
 env.Command(
     'bs2_default_padded_checksummed.S',
     'bs2_default.bin',
-    'python3 src/rp2_common/boot_stage2/pad_checksum -s 0xffffffff bs2_default.bin bs2_default_padded_checksummed.S',
+    '"$PYTHON" src/rp2_common/boot_stage2/pad_checksum -s 0xffffffff bs2_default.bin bs2_default_padded_checksummed.S',
 )
