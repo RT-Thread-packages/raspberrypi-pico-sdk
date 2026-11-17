@@ -62,6 +62,7 @@ src/rp2_common/boot_stage2/include
 src/boards/include
 ''')
 )
+env.PrependENVPath('PATH', os.environ.get('PATH', ''))
 env.PrependENVPath('PATH', EXEC_PATH)
 
 env.Command(
